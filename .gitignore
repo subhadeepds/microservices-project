@@ -1,0 +1,28 @@
+# Eclipse  STS
+.metadata
+.classpath
+.project
+.settings
+
+# Build
+target
+.class
+.jar
+.war
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea
+.iml
+.vscode
+
+# Maven wrapper
+.mvn
+!.mvnwrappermaven-wrapper.jar
+
+# Logs and env
+.log
+.env
