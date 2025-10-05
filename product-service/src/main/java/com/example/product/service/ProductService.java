@@ -1,6 +1,7 @@
 package com.example.product.service;
 
 import com.example.product.entity.Product;
+import com.example.product.exception.BadRequestException;
 import com.example.product.exception.ProductNotFoundException;
 import com.example.product.repository.ProductRepository;
 import org.springframework.stereotype.Service;
@@ -16,28 +17,71 @@ public class ProductService {
         this.repository = repository;
     }
 
+    /**
+     * Get all products.
+     */
     public List<Product> getAllProducts() {
         return repository.findAll();
     }
 
+    /**
+     * Get a product by ID.
+     */
     public Product getProductById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found with id " + id));
     }
 
+    /**
+     * Create a new product (with validation).
+     */
     public Product createProduct(Product product) {
+        validateProduct(product);
         return repository.save(product);
     }
 
+    /**
+     * Update an existing product (with validation).
+     */
     public Product updateProduct(Long id, Product updated) {
-        Product existing = getProductById(id);
+        validateProduct(updated);
+
+        Product existing = repository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id " + id));
+
         existing.setName(updated.getName());
+        existing.setDescription(updated.getDescription());
         existing.setPrice(updated.getPrice());
+        existing.setStock(updated.getStock());
+
         return repository.save(existing);
     }
 
+    /**
+     * Delete a product by ID.
+     */
     public void deleteProduct(Long id) {
-        Product existing = getProductById(id);
-        repository.delete(existing);
+        if (!repository.existsById(id)) {
+            throw new ProductNotFoundException("Cannot delete — product not found with id " + id);
+        }
+        repository.deleteById(id);
+    }
+
+    /**
+     * Validate the product input before saving.
+     */
+    private void validateProduct(Product product) {
+        if (product == null) {
+            throw new BadRequestException("Product cannot be null");
+        }
+        if (product.getName() == null || product.getName().isBlank()) {
+            throw new BadRequestException("Product name cannot be empty");
+        }
+        if (product.getPrice() == null || product.getPrice() <= 0) {
+            throw new BadRequestException("Product price must be positive");
+        }
+        if (product.getStock() == null || product.getStock() < 0) {
+            throw new BadRequestException("Product stock cannot be negative");
+        }
     }
 }

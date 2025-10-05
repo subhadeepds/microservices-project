@@ -28,8 +28,8 @@ class ProductControllerIntegrationTest {
     @BeforeEach
     void setup() {
         repository.deleteAll();
-        repository.save(new Product(null, "Laptop", 1200.0));
-        repository.save(new Product(null, "Phone", 800.0));
+        repository.save(new Product("Laptop", "Powerful laptop", 1200.0, 10));
+        repository.save(new Product("Phone", "Smartphone with AMOLED", 800.0, 15));
     }
 
     @Test
@@ -38,17 +38,20 @@ class ProductControllerIntegrationTest {
                         .with(httpBasic("admin", "password")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].name", is("Laptop")));
+                .andExpect(jsonPath("$[0].name", is("Laptop")))
+                .andExpect(jsonPath("$[0].price", is(1200.0)));
     }
 
     @Test
     void testGetProductById() throws Exception {
-        Product product = repository.save(new Product(null, "Keyboard", 100.0));
+        Product product = repository.save(new Product("Keyboard", "RGB mechanical keyboard", 100.0, 20));
 
         mockMvc.perform(get("/products/" + product.getId())
                         .with(httpBasic("admin", "password")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name", is("Keyboard")));
+                .andExpect(jsonPath("$.name", is("Keyboard")))
+                .andExpect(jsonPath("$.description", is("RGB mechanical keyboard")))
+                .andExpect(jsonPath("$.stock", is(20)));
     }
 
     @Test
@@ -56,7 +59,9 @@ class ProductControllerIntegrationTest {
         String json = """
                 {
                     "name": "Monitor",
-                    "price": 300.0
+                    "description": "24-inch Full HD monitor",
+                    "price": 300.0,
+                    "stock": 8
                 }
                 """;
 
@@ -66,12 +71,13 @@ class ProductControllerIntegrationTest {
                         .content(json))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name", is("Monitor")))
+                .andExpect(jsonPath("$.description", is("24-inch Full HD monitor")))
                 .andExpect(jsonPath("$.id").exists());
     }
 
     @Test
     void testDeleteProduct() throws Exception {
-        Product product = repository.save(new Product(null, "Mouse", 25.0));
+        Product product = repository.save(new Product("Mouse", "Wireless mouse", 25.0, 30));
 
         mockMvc.perform(delete("/products/" + product.getId())
                         .with(httpBasic("admin", "password")))
