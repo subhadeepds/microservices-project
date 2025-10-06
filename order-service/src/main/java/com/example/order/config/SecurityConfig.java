@@ -1,41 +1,32 @@
 package com.example.order.config;
 
+import com.example.order.security.HeaderAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 public class SecurityConfig {
 
     @Bean
-    public InMemoryUserDetailsManager userDetailsService() {
-        return new InMemoryUserDetailsManager(
-                User.withUsername("admin").password("password").roles("ADMIN").build(),
-                User.withUsername("user").password("1234").roles("USER").build()
-        );
-    }
-
-    @Bean
-    public static NoOpPasswordEncoder passwordEncoder() {
-        return (NoOpPasswordEncoder) NoOpPasswordEncoder.getInstance();
-    }
-
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .addFilterBefore(new HeaderAuthenticationFilter(),
+                    org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.GET, "/orders/**").hasAnyRole("ADMIN", "USER")
-                .requestMatchers(HttpMethod.POST, "/orders/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/orders/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/orders/**").hasRole("ADMIN")
+                // ✅ USER can create and view orders
+                .requestMatchers("/orders/**").hasAnyRole("USER", "ADMIN")
+
+                // ✅ ADMIN can delete or update any order
+                .requestMatchers("/orders/delete/**", "/orders/update/**").hasRole("ADMIN")
+
+                // everything else requires authentication
                 .anyRequest().authenticated()
             )
-            .httpBasic();
+            .httpBasic(httpBasic -> httpBasic.disable());
+
         return http.build();
     }
 }

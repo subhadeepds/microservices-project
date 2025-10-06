@@ -13,7 +13,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties = "spring.profiles.active=test")
+@SpringBootTest
 @AutoConfigureMockMvc
 class OrderControllerIntegrationTest {
 
@@ -29,8 +29,7 @@ class OrderControllerIntegrationTest {
     }
 
     @Test
-    void testCreateAndRetrieveOrder() throws Exception {
-        // Create order JSON
+    void testCreateAndRetrieveOrder_AsAdmin() throws Exception {
         String orderJson = """
                 {
                     "customerId": 1,
@@ -38,18 +37,24 @@ class OrderControllerIntegrationTest {
                 }
                 """;
 
-        // 🔐 Add valid Basic Auth credentials here
+        // Create order (Admin only)
         mockMvc.perform(post("/orders")
-                        .with(httpBasic("admin", "password"))   // ✅ use same creds as your app
+                        .with(httpBasic("admin", "adminpass"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(orderJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").exists());
 
-        // Fetch all orders
+        // Get all orders (both Admin & User)
         mockMvc.perform(get("/orders")
-                        .with(httpBasic("admin", "password")))   // ✅ same credentials
+                        .with(httpBasic("user", "userpass")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    void testUnauthorizedAccess_ShouldReturn401() throws Exception {
+        mockMvc.perform(get("/orders"))
+                .andExpect(status().isUnauthorized());
     }
 }

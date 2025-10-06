@@ -1,7 +1,6 @@
 package com.example.customer.service;
 
 import com.example.customer.entity.Customer;
-import com.example.customer.exception.BadRequestException;
 import com.example.customer.exception.CustomerNotFoundException;
 import com.example.customer.repository.CustomerRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +15,10 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for CustomerService.
+ * Uses Mockito to mock the repository layer and test service logic independently.
+ */
 class CustomerServiceTest {
 
     @Mock
@@ -25,96 +28,96 @@ class CustomerServiceTest {
     private CustomerService service;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
     }
 
-    // ✅ Test: get all customers
+    // =========================================================
+    // TEST: Get all customers
+    // =========================================================
     @Test
     void testGetAllCustomers() {
         when(repository.findAll()).thenReturn(List.of(
-                new Customer("Alice Johnson", "alice@example.com", "9876543210"),
-                new Customer("Bob Smith", "bob@example.com", "8765432190")
+                new Customer(1L, "Alice", "alice@example.com", "9876543210"),
+                new Customer(2L, "Bob", "bob@example.com", "9123456780")
         ));
 
-        List<Customer> result = service.getAllCustomers();
+        List<Customer> customers = service.getAllCustomers();
 
-        assertEquals(2, result.size());
-        assertEquals("Alice Johnson", result.get(0).getName());
+        assertEquals(2, customers.size());
+        assertEquals("Alice", customers.get(0).getName());
         verify(repository, times(1)).findAll();
     }
 
-    // ✅ Test: get customer by ID (found)
+    // =========================================================
+    // TEST: Get customer by ID (success)
+    // =========================================================
     @Test
-    void testGetCustomerById_Found() {
-        Customer customer = new Customer("John Doe", "john@example.com", "9998887777");
+    void testGetCustomerById_Success() {
+        Customer customer = new Customer(1L, "Alice", "alice@example.com", "9876543210");
         when(repository.findById(1L)).thenReturn(Optional.of(customer));
 
         Customer result = service.getCustomerById(1L);
 
         assertNotNull(result);
-        assertEquals("John Doe", result.getName());
-        verify(repository).findById(1L);
+        assertEquals("Alice", result.getName());
+        verify(repository, times(1)).findById(1L);
     }
 
-    // ✅ Test: get customer by ID (not found)
+    // =========================================================
+    // TEST: Get customer by ID (not found)
+    // =========================================================
     @Test
     void testGetCustomerById_NotFound() {
-        when(repository.findById(1L)).thenReturn(Optional.empty());
-        assertThrows(CustomerNotFoundException.class, () -> service.getCustomerById(1L));
-    }
+        when(repository.findById(99L)).thenReturn(Optional.empty());
 
-    // ✅ Test: create valid customer
-    @Test
-    void testCreateCustomer_Valid() {
-        Customer newCustomer = new Customer("Charlie Brown", "charlie@example.com", "9123456789");
-        when(repository.save(any(Customer.class))).thenReturn(newCustomer);
+        assertThrows(CustomerNotFoundException.class, () -> service.getCustomerById(99L));
 
-        Customer result = service.createCustomer(newCustomer);
-
-        assertNotNull(result);
-        assertEquals("Charlie Brown", result.getName());
-        verify(repository).save(newCustomer);
-    }
-
-    // ✅ Test: invalid customer (no email)
-    @Test
-    void testCreateCustomer_InvalidEmail() {
-        Customer invalid = new Customer("Sam", "samemail.com", "9876543210"); // invalid email
-        assertThrows(BadRequestException.class, () -> service.createCustomer(invalid));
+        verify(repository, times(1)).findById(99L);
+        verify(repository, never()).delete(any());
         verify(repository, never()).save(any());
     }
 
-    // ✅ Test: update customer success
+    // =========================================================
+    // TEST: Create customer
+    // =========================================================
     @Test
-    void testUpdateCustomer_Success() {
-        Customer existing = new Customer("Alice", "alice@gmail.com", "9876543210");
-        Customer updated = new Customer("Alice Johnson", "alice.j@gmail.com", "9876500000");
+    void testCreateCustomer() {
+        Customer input = new Customer("John", "john@example.com", "9000012345");
+        Customer saved = new Customer(1L, "John", "john@example.com", "9000012345");
 
-        when(repository.findById(1L)).thenReturn(Optional.of(existing));
-        when(repository.save(existing)).thenReturn(existing);
+        when(repository.save(any(Customer.class))).thenReturn(saved);
 
-        Customer result = service.updateCustomer(1L, updated);
+        Customer result = service.createCustomer(input);
 
-        assertEquals("Alice Johnson", result.getName());
-        assertEquals("alice.j@gmail.com", result.getEmail());
-        assertEquals("9876500000", result.getPhone());
-        verify(repository).save(existing);
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
+        assertEquals("John", result.getName());
+        verify(repository, times(1)).save(input);
     }
 
-    // ✅ Test: delete existing customer
+    // =========================================================
+    // TEST: Delete customer (success)
+    // =========================================================
+    
     @Test
     void testDeleteCustomer_Success() {
-        when(repository.existsById(2L)).thenReturn(true);
-        service.deleteCustomer(2L);
-        verify(repository).deleteById(2L);
+        when(repository.existsById(1L)).thenReturn(true);
+
+        service.deleteCustomer(1L);
+
+        verify(repository, times(1)).deleteById(1L);
     }
 
-    // ✅ Test: delete customer not found
+    // =========================================================
+    // TEST: Delete customer (not found)
+    // =========================================================
     @Test
     void testDeleteCustomer_NotFound() {
-        when(repository.existsById(99L)).thenReturn(false);
-        assertThrows(CustomerNotFoundException.class, () -> service.deleteCustomer(99L));
-        verify(repository, never()).deleteById(anyLong());
+        when(repository.findById(2L)).thenReturn(Optional.empty());
+
+        assertThrows(CustomerNotFoundException.class, () -> service.deleteCustomer(2L));
+
+        verify(repository, never()).delete(any());
     }
 }

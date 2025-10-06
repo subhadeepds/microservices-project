@@ -31,7 +31,7 @@ class OrderServiceTest {
 
     @Test
     void testGetOrderById_ReturnsDetailedResponse() {
-        // Mock an order entity
+        // Mock order
         Order order = new Order();
         order.setId(1L);
         order.setCustomerId(1L);
@@ -39,24 +39,27 @@ class OrderServiceTest {
 
         when(repository.findById(1L)).thenReturn(Optional.of(order));
 
-        // Mock external calls to customer & product services
-        when(restTemplate.getForObject("http://localhost:8080/customer-service/customers/1", Map.class))
+        // Mock calls to customer & product microservices
+        when(restTemplate.getForObject("http://customer-service/customers/1", Map.class))
                 .thenReturn(Map.of("name", "Alice Johnson"));
 
-        when(restTemplate.getForObject("http://localhost:8080/product-service/products/1", Map.class))
+        when(restTemplate.getForObject("http://product-service/products/1", Map.class))
                 .thenReturn(Map.of("name", "Laptop"));
 
+        // Execute
         OrderDetailResponse response = service.getOrderById(1L);
 
+        // Validate
         assertNotNull(response);
         assertEquals("Alice Johnson", response.getCustomerName());
+        assertEquals(1, response.getProducts().size());
         assertEquals("Laptop", response.getProducts().get(0).getProductName());
         assertEquals(2, response.getProducts().get(0).getQuantity());
     }
 
     @Test
     void testGetOrderById_ThrowsWhenNotFound() {
-        when(repository.findById(5L)).thenReturn(Optional.empty());
-        assertThrows(RuntimeException.class, () -> service.getOrderById(5L));
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(RuntimeException.class, () -> service.getOrderById(99L));
     }
 }
