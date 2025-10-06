@@ -30,6 +30,17 @@ public class ProductController {
     public Product createProduct(@RequestBody Product product) {
         return service.createProduct(product);
     }
+    
+    @PutMapping("/{id}/stock")
+    public void updateStock(@PathVariable Long id, @RequestParam int change) {
+        if (change == 0) return;
+
+        if (change < 0) {
+            service.decreaseStock(id, Math.abs(change));
+        } else {
+            service.increaseStock(id, change);
+        }
+    }
 
     @PutMapping("/{id}")
     public Product updateProduct(@PathVariable Long id, @RequestBody Product product) {

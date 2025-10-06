@@ -66,6 +66,32 @@ public class ProductService {
         }
         repository.deleteById(id);
     }
+    
+    
+    
+    
+    public void decreaseStock(Long productId, int quantity) {
+        Product product = getProductById(productId);
+        if (product.getStock() < quantity) {
+            throw new BadRequestException("Not enough stock for product ID " + productId);
+        }
+        product.setStock(product.getStock() - quantity);
+        repository.save(product);
+    }
+
+    /**
+     * Increase stock when an order is deleted (restock).
+     */
+    public void increaseStock(Long productId, int quantity) {
+        Product product = getProductById(productId);
+        product.setStock(product.getStock() + quantity);
+        repository.save(product);
+    }
+    
+    
+    
+    
+    
 
     /**
      * Validate the product input before saving.

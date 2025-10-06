@@ -21,7 +21,7 @@ public class AppConfig {
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
         return builder
-                .basicAuthentication("admin", "password") // ✅ send credentials for internal calls
+                .basicAuthentication("admin", "adminpass") // ✅ send credentials for internal calls
                 .setConnectTimeout(Duration.ofSeconds(3))
                 .setReadTimeout(Duration.ofSeconds(5))
                 .build();
